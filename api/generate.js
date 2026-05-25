@@ -1,4 +1,4 @@
-const REPLICATE_API_KEY = "r8_EKbgyJBZsAYIyKV8ROzZj380IxDholx4Uv2Hb";
+const REPLICATE_API_KEY = "r8_4fCI7oVx86vrGOqaxhmLkNlfSJCTxW81idYDY";
 
 const REGION_PROMPTS = {
   "القبائل":   "wearing traditional Kabyle Berber costume, colorful embroidered dress, silver jewelry, mountain village background, professional photo",
