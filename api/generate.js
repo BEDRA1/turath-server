@@ -1,14 +1,14 @@
-const HF_API_KEY = "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";
+const REPLICATE_API_KEY = "r8_EKbgyJBZsAYIyKV8ROzZj380IxDholx4Uv2Hb";
 
 const REGION_PROMPTS = {
-  "القبائل":   "person wearing traditional Kabyle Berber costume, colorful embroidered dress, silver jewelry, Amazigh clothing, mountain village background",
-  "تلمسان":    "person wearing traditional Tlemcen chedda dress, gold embroidery, Andalusian Moorish costume, palace background",
-  "جانت":      "person wearing traditional Tuareg indigo blue robes and turban, Sahara desert background",
-  "بسكرة":     "person wearing traditional Algerian burnous white robe, palm oasis background",
-  "قسنطينة":   "person wearing traditional Constantine embroidered costume, suspended bridges background",
-  "الأوراس":   "person wearing traditional Chaoui costume, colorful woven dress, silver ornaments, mountain background",
-  "وهران":     "person wearing traditional Oran embroidered costume, Mediterranean sea background",
-  "ميزاب":     "person wearing traditional Mozabite white modest dress, ancient Ghardaia city background",
+  "القبائل":   "wearing traditional Kabyle Berber costume, colorful embroidered dress, silver jewelry, Amazigh clothing, mountain village background, professional photo, high quality",
+  "تلمسان":    "wearing traditional Tlemcen chedda dress, gold embroidery, Andalusian Moorish costume, palace background, professional photo, high quality",
+  "جانت":      "wearing traditional Tuareg indigo blue robes and turban, Sahara desert background, professional photo, high quality",
+  "بسكرة":     "wearing traditional Algerian burnous white robe, palm oasis background, professional photo, high quality",
+  "قسنطينة":   "wearing traditional Constantine embroidered costume, suspended bridges background, professional photo, high quality",
+  "الأوراس":   "wearing traditional Chaoui costume, colorful woven dress, silver ornaments, mountain background, professional photo, high quality",
+  "وهران":     "wearing traditional Oran embroidered costume, Mediterranean sea background, professional photo, high quality",
+  "ميزاب":     "wearing traditional Mozabite white modest dress, ancient Ghardaia city background, professional photo, high quality",
 };
 
 export default async function handler(req, res) {
@@ -23,44 +23,49 @@ export default async function handler(req, res) {
     const { imageBase64, region } = req.body;
     if (!imageBase64 || !region) return res.status(400).json({ error: "imageBase64 و region مطلوبان" });
 
-    const prompt = REGION_PROMPTS[region] || "person wearing traditional Algerian costume";
+    const prompt = REGION_PROMPTS[region] || "wearing traditional Algerian costume, professional photo";
 
-    // تحويل base64 إلى blob
-    const imageBuffer = Buffer.from(imageBase64, "base64");
+    const replicateRes = await fetch("https://api.replicate.com/v1/predictions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${REPLICATE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        version: "9a9b6aa5ac2793993aaaff48fd0e05fc5be213bc85a0bafd24e578d3bb81e628",
+        input: {
+          image: `data:image/jpeg;base64,${imageBase64}`,
+          prompt: prompt,
+          negative_prompt: "ugly, deformed, blurry, bad face, extra limbs, disfigured, watermark",
+          num_inference_steps: 20,
+          guidance_scale: 7.5,
+          prompt_strength: 0.6,
+          scheduler: "K_EULER"
+        }
+      })
+    });
 
-    // استخدام Hugging Face img2img
-    const formData = new FormData();
-    const imageBlob = new Blob([imageBuffer], { type: "image/jpeg" });
-    
-    const response = await fetch(
-      "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${HF_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          inputs: prompt,
-          parameters: {
-            num_inference_steps: 20,
-            guidance_scale: 7.5,
-          }
-        })
-      }
-    );
+    const prediction = await replicateRes.json();
+    if (prediction.error) throw new Error(prediction.error);
 
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(err);
+    // Polling للنتيجة
+    let result = prediction;
+    let attempts = 0;
+    while (result.status !== "succeeded" && result.status !== "failed" && attempts < 40) {
+      await new Promise(r => setTimeout(r, 3000));
+      const poll = await fetch(`https://api.replicate.com/v1/predictions/${result.id}`, {
+        headers: { "Authorization": `Bearer ${REPLICATE_API_KEY}` }
+      });
+      result = await poll.json();
+      attempts++;
     }
 
-    // الناتج صورة binary
-    const imageArrayBuffer = await response.arrayBuffer();
-    const base64Result = Buffer.from(imageArrayBuffer).toString("base64");
-    const imageUrl = `data:image/jpeg;base64,${base64Result}`;
+    if (result.status === "succeeded" && result.output) {
+      const imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
+      return res.status(200).json({ imageUrl });
+    }
 
-    return res.status(200).json({ imageUrl });
+    throw new Error(result.error || "فشل توليد الصورة");
 
   } catch (err) {
     console.error(err);
