@@ -53,14 +53,15 @@ export default async function handler(req, res) {
         "Prefer": "wait"
       },
       body: JSON.stringify({
-        version: "854e8727697a057c525cdb45ab037f64ecca770a658769d47da539234aa29a45",
+        version: "ac732df83cea7fff18b8472768c88ad041fa750ff7682a21affe81863cbe77e4",
         input: {
           image: `data:image/jpeg;base64,${imageBase64}`,
-          prompt: prompt,
-          negative_prompt: "ugly, deformed, blurry, bad anatomy, wrong face",
-          num_inference_steps: 30,
-          guidance_scale: 7.5,
-          strength: 0.75,
+          prompt: `${prompt}, highly detailed, professional photography, 8k`,
+          negative_prompt: "ugly, deformed, blurry, bad anatomy, distorted face, extra limbs",
+          num_inference_steps: 20,
+          guidance_scale: 7,
+          strength: 0.7,
+          scheduler: "K_EULER"
         }
       })
     });
