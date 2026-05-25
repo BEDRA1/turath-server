@@ -1,4 +1,3 @@
-
 const REPLICATE_API_KEY = "r8_EKbgyJBZsAYIyKV8ROzZj380IxDholx4Uv2Hb";
 
 const REGION_PROMPTS = {
@@ -34,7 +33,7 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        version: "15a3689ee13b0d2616e98820eca31d4af4c8da374c3b7e2e8b03f3ffe9fc7e9e",
+        version: "9a9b6aa5ac2793993aaaff48fd0e05fc5be213bc85a0bafd24e578d3bb81e628",
         input: {
           image: `data:image/jpeg;base64,${imageBase64}`,
           prompt: prompt,
